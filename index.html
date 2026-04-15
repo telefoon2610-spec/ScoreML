@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Scorebord L vs M</title>
+
+<style>
+  body { font-family: Arial; max-width: 900px; margin: 20px auto; }
+  h1 { text-align: center; }
+  .card { border: 1px solid #ddd; padding: 10px; margin-top: 10px; border-radius: 8px; }
+  select, input { margin: 5px; padding: 5px; }
+  button { padding: 8px 12px; cursor: pointer; }
+</style>
+
+</head>
+<body>
+
+<h1>Scorebord L vs M</h1>
+
+<!-- INPUT -->
+<div class="card">
+  <h3>Nieuwe game</h3>
+
+  <label>Spel:</label>
+  <select id="gameSelect"></select><br>
+
+  <label>Winnaar:</label>
+  <select id="winner">
+    <option value="L">L</option>
+    <option value="M">M</option>
+    <option value="Gelijk">Gelijk</option>
+  </select><br>
+
+  <label>Score L:</label>
+  <input type="number" id="scoreL">
+
+  <label>Score M:</label>
+  <input type="number" id="scoreM"><br>
+
+  <button onclick="addGame()">Opslaan</button>
+</div>
+
+<!-- STATS -->
+<div id="stats"></div>
+
+<!-- HISTORY -->
+<div id="history"></div>
+
+<script>
+// 📦 alle spellen
+const games = [
+  "Clever 1","Clever 2","Clever 3","Clever 4","Clever D",
+  "Keer op keer 1","Keer op keer 2","Keer op keer 3","Keer op keer 4",
+  "Locus","Wingspan","Wingspan 2v2"
+];
+
+// 💾 opgeslagen resultaten
+let results = JSON.parse(localStorage.getItem("results") || "[]");
+
+// dropdown vullen
+const gameSelect = document.getElementById("gameSelect");
+games.forEach(g => {
+  const opt = document.createElement("option");
+  opt.value = g;
+  opt.textContent = g;
+  gameSelect.appendChild(opt);
+});
+
+// ➕ game toevoegen
+function addGame() {
+  const entry = {
+    game: gameSelect.value,
+    winner: document.getElementById("winner").value,
+    scoreL: Number(document.getElementById("scoreL").value || 0),
+    scoreM: Number(document.getElementById("scoreM").value || 0),
+    date: new Date().toISOString().slice(0,10)
+  };
+
+  results.push(entry);
+  localStorage.setItem("results", JSON.stringify(results));
+
+  render();
+}
+
+// 📊 helpers
+function getPlayedGames() {
+  return [...new Set(results.map(r => r.game))];
+}
+
+// 🎨 render alles
+function render() {
+  let winsL = 0, winsM = 0, draw = 0;
+
+  results.forEach(r => {
+    if (r.winner === "L") winsL++;
+    else if (r.winner === "M") winsM++;
+    else draw++;
+  });
+
+  const playedGames = getPlayedGames();
+
+  // STATS
+  document.getElementById("stats").innerHTML = `
+    <div class="card">
+      <h3>Overzicht</h3>
+      <b>Totaal gespeeld:</b> ${results.length}<br>
+      <b>Wins L:</b> ${winsL}<br>
+      <b>Wins M:</b> ${winsM}<br>
+      <b>Gelijk:</b> ${draw}
+    </div>
+
+    <div class="card">
+      <h3>Gespeelde spellen</h3>
+      ${playedGames.length ? playedGames.map(g => "• " + g).join("<br>") : "Nog geen spellen gespeeld"}
+    </div>
+  `;
+
+  // HISTORY
+  document.getElementById("history").innerHTML = `
+    <div class="card">
+      <h3>Geschiedenis</h3>
+      ${
+        results.length
+        ? results.slice().reverse().map(r => `
+            <div style="margin-bottom:8px;">
+              <b>${r.game}</b> (${r.date})<br>
+              ${r.scoreL} - ${r.scoreM} → <b>${r.winner}</b>
+            </div>
+          `).join("")
+        : "Nog geen games ingevoerd"
+      }
+    </div>
+  `;
+}
+
+// eerste render
+render();
+</script>
+
+</body>
+</html>
