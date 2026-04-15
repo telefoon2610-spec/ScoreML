@@ -5,7 +5,12 @@
 <title>Scorebord L vs M</title>
 
 <style>
-  body { font-family: Arial; max-width: 800px; margin: 20px auto; }
+  body {
+    font-family: Arial;
+    max-width: 750px;
+    margin: 20px auto;
+  }
+
   h1 { text-align: center; }
 
   .card {
@@ -20,11 +25,32 @@
     margin: 4px;
   }
 
+  button { cursor: pointer; }
+
   .row {
     display: flex;
     justify-content: space-between;
-    padding: 6px 0;
+    padding: 8px 0;
     border-bottom: 1px solid #eee;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .delete-btn {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 5px;
+  }
+
+  .toggle {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    margin-top: 5px;
   }
 
   .muted {
@@ -38,7 +64,7 @@
 
 <h1>Scorebord L vs M</h1>
 
-<!-- INPUT -->
+<!-- ➕ GAME INPUT -->
 <div class="card">
   <h3>Nieuwe game</h3>
 
@@ -56,34 +82,93 @@
   <button onclick="addGame()">Opslaan</button>
 </div>
 
-<!-- DASHBOARD -->
+<!-- 📊 OVERZICHT -->
 <div id="dashboard"></div>
 
-<!-- HISTORY -->
+<!-- 📜 HISTORY -->
 <div class="card">
-  <h3>Geschiedenis (kort)</h3>
+  <h3>Geschiedenis</h3>
   <div id="history"></div>
+</div>
+
+<!-- ⚙️ BEHEER (ingeklapt) -->
+<div class="card">
+  <button class="toggle" onclick="toggleAdmin()">
+    Spellen beheren ⚙️
+  </button>
+
+  <div id="adminPanel" style="display:none; margin-top:10px;">
+    <input type="text" id="newGame" placeholder="Nieuw spel">
+    <button onclick="addNewGame()">Toevoegen</button>
+
+    <div id="gameList"></div>
+  </div>
 </div>
 
 <script>
 
-const games = [
+// 📦 data
+let games = JSON.parse(localStorage.getItem("games") || JSON.stringify([
   "Clever 1","Clever 2","Clever 3","Clever 4","Clever D",
   "Keer op keer 1","Keer op keer 2","Keer op keer 3","Keer op keer 4",
   "Locus","Wingspan","Wingspan 2v2"
-];
+]));
 
 let results = JSON.parse(localStorage.getItem("results") || "[]");
 
-// dropdown vullen
 const gameSelect = document.getElementById("gameSelect");
-games.forEach(g => {
-  const opt = document.createElement("option");
-  opt.value = g;
-  opt.textContent = g;
-  gameSelect.appendChild(opt);
-});
 
+// 🔄 spellen renderen
+function renderGames() {
+
+  games.sort((a,b)=>a.localeCompare(b));
+
+  gameSelect.innerHTML = "";
+  games.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g;
+    opt.textContent = g;
+    gameSelect.appendChild(opt);
+  });
+
+  document.getElementById("gameList").innerHTML =
+    games.map(g => `
+      <div class="row">
+        <span>${g}</span>
+        <button class="delete-btn" onclick="deleteGame('${g}')">🗑</button>
+      </div>
+    `).join("");
+
+  localStorage.setItem("games", JSON.stringify(games));
+}
+
+// ➕ nieuw spel
+function addNewGame() {
+  const g = document.getElementById("newGame").value.trim();
+  if (!g) return;
+
+  if (!games.includes(g)) {
+    games.push(g);
+    renderGames();
+  }
+
+  document.getElementById("newGame").value = "";
+}
+
+// ❌ spel verwijderen
+function deleteGame(name) {
+  if (!confirm("Spel verwijderen?")) return;
+
+  games = games.filter(g => g !== name);
+  results = results.filter(r => r.game !== name);
+
+  localStorage.setItem("results", JSON.stringify(results));
+
+  renderGames();
+  render();
+}
+
+// ➕ game opslaan
 function addGame() {
   results.push({
     game: gameSelect.value,
@@ -96,40 +181,62 @@ function addGame() {
   render();
 }
 
+// 🗑 match verwijderen
+function deleteMatch(i) {
+  results.splice(i,1);
+  localStorage.setItem("results", JSON.stringify(results));
+  render();
+}
+
+// 📊 render dashboard + history
 function render() {
 
-  let L = 0, M = 0, D = 0;
+  let L=0, M=0, D=0;
 
-  results.forEach(r => {
-    if (r.winner === "L") L++;
-    else if (r.winner === "M") M++;
+  results.forEach(r=>{
+    if(r.winner==="L") L++;
+    else if(r.winner==="M") M++;
     else D++;
   });
 
-  // DASHBOARD
+  let leader = "Gelijk";
+  if (L > M) leader = "L staat voor";
+  else if (M > L) leader = "M staat voor";
+
   document.getElementById("dashboard").innerHTML = `
     <div class="card">
       <h3>Overzicht</h3>
-      <div class="row"><span>Totaal gespeeld</span><b>${results.length}</b></div>
-      <div class="row"><span>Wins L</span><b>${L}</b></div>
-      <div class="row"><span>Wins M</span><b>${M}</b></div>
+
+      <div class="row"><span>Totaal</span><b>${results.length}</b></div>
+      <div class="row"><span>L wint</span><b>${L}</b></div>
+      <div class="row"><span>M wint</span><b>${M}</b></div>
       <div class="row"><span>Gelijk</span><b>${D}</b></div>
+
+      <div class="row"><span>Tussenstand</span><b>${leader}</b></div>
     </div>
   `;
 
-  // HISTORY (super compact)
   document.getElementById("history").innerHTML =
     results.length === 0
-      ? "<div class='muted'>Nog geen games gespeeld</div>"
-      : results.map(r => `
-          <div class="row">
-            <span>${r.game}</span>
-            <span>${r.scoreL}-${r.scoreM}</span>
-            <b>${r.winner}</b>
-          </div>
-        `).join("");
+      ? "<div class='muted'>Nog geen games</div>"
+      : results.map((r,i)=>`
+        <div class="row">
+          <div style="flex:2">${r.game}</div>
+          <div style="flex:2;text-align:center">M:${r.scoreM} | L:${r.scoreL}</div>
+          <div style="flex:1;text-align:right">${r.winner}</div>
+          <button class="delete-btn" onclick="deleteMatch(${i})">🗑</button>
+        </div>
+      `).join("");
 }
 
+// 🎛 toggle admin
+function toggleAdmin() {
+  const p = document.getElementById("adminPanel");
+  p.style.display = (p.style.display === "none") ? "block" : "none";
+}
+
+// init
+renderGames();
 render();
 
 </script>
