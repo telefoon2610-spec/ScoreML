@@ -5,57 +5,81 @@
 <title>Scorebord L vs M</title>
 
 <style>
-  body {
-    font-family: Arial;
-    max-width: 750px;
-    margin: 20px auto;
-  }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f5f7fb;
+  max-width: 900px;
+  margin: 20px auto;
+  color: #333;
+}
 
-  h1 { text-align: center; }
+/* 👇 LOS van body */
+.form-group {
+  margin-bottom: 10px;
+}
 
-  .card {
-    border: 1px solid #ddd;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 8px;
-  }
+h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-  select, input, button {
-    padding: 6px;
-    margin: 4px;
-  }
+.card {
+  background: white;
+  border: none;
+  padding: 16px;
+  margin-top: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
 
-  button { cursor: pointer; }
+select, input {
+  padding: 8px;
+  margin: 4px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
 
-  .row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #eee;
-    align-items: center;
-    gap: 10px;
-  }
+button {
+  padding: 8px 12px;
+  margin: 4px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: #4a6cf7;
+  color: white;
+  transition: 0.2s;
+}
 
-  .delete-btn {
-    background: #ff4d4d;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 5px;
-  }
+button:hover {
+  background: #3a55d1;
+}
 
-  .toggle {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    margin-top: 5px;
-  }
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #eee;
+  align-items: center;
+  gap: 10px;
+}
 
-  .muted {
-    color: gray;
-    font-size: 12px;
+.delete-btn {
+  background: #ff4d4d;
+}
+
+.delete-btn:hover {
+  background: #d93636;
+}
+
+.toggle {
+  background: #555;
+}
+
+.muted {
+  color: gray;
+  font-size: 12px; 
+
+
   }
 </style>
 </head>
@@ -346,9 +370,9 @@ function render() {
       else D++;
     });
 
-    let leader = "Gelijk";
-    if (L > M) leader = "L staat voor";
-    else if (M > L) leader = "M staat voor";
+    let leader = "🤝 Gelijk";
+    if (L > M) leader = "🔥 L staat voor";
+    else if (M > L) leader = "🔥 M staat voor";
 
     return { total:list.length, L, M, D, leader };
   }
@@ -357,33 +381,37 @@ function render() {
   const vacation = calc(vacationResults);
   const { yearPoints, vacationPoints } = calculatePoints();
 
-  document.getElementById("dashboard").innerHTML = `
+document.getElementById("dashboard").innerHTML = `
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+    
     <div class="card">
-      <h3>Jaar competitie (actief)</h3>
+      <h3>Jaar competitie</h3>
       <div class="row"><span>Totaal</span><b>${year.total}</b></div>
-      <div class="row"><span>L wint</span><b>${year.L}</b></div>
-      <div class="row"><span>M wint</span><b>${year.M}</b></div>
+      <div class="row"><span>L</span><b>${year.L}</b></div>
+      <div class="row"><span>M</span><b>${year.M}</b></div>
       <div class="row"><span>Gelijk</span><b>${year.D}</b></div>
-      <div class="row"><span>Tussenstand</span><b>${year.leader}</b></div>
+      <div class="row"><b>${year.leader}</b></div>
     </div>
 
     <div class="card">
-      <h3>Vacation toernooi (actief)</h3>
+      <h3>Vacation</h3>
       <div class="row"><span>Totaal</span><b>${vacation.total}</b></div>
-      <div class="row"><span>L wint</span><b>${vacation.L}</b></div>
-      <div class="row"><span>M wint</span><b>${vacation.M}</b></div>
+      <div class="row"><span>L</span><b>${vacation.L}</b></div>
+      <div class="row"><span>M</span><b>${vacation.M}</b></div>
       <div class="row"><span>Gelijk</span><b>${vacation.D}</b></div>
-      <div class="row"><span>Tussenstand</span><b>${vacation.leader}</b></div>
+      <div class="row"><b>${vacation.leader}</b></div>
     </div>
 
-    <div class="card">
-      <h3>Punten</h3>
-      <div class="row"><span>Jaar punten L</span><b>${yearPoints.L}</b></div>
-      <div class="row"><span>Jaar punten M</span><b>${yearPoints.M}</b></div>
-      <div class="row"><span>Vacation punten L</span><b>${vacationPoints.L}</b></div>
-      <div class="row"><span>Vacation punten M</span><b>${vacationPoints.M}</b></div>
-    </div>
-  `;
+  </div>
+
+  <div class="card">
+    <h3>Punten</h3>
+    <div class="row"><span>Jaar L</span><b>${yearPoints.L}</b></div>
+    <div class="row"><span>Jaar M</span><b>${yearPoints.M}</b></div>
+    <div class="row"><span>Vacation L</span><b>${vacationPoints.L}</b></div>
+    <div class="row"><span>Vacation M</span><b>${vacationPoints.M}</b></div>
+  </div>
+`;
 
   let html = "";
 
@@ -398,7 +426,11 @@ function render() {
           return `
             <div class="row">
               <div style="flex:2">${r.game}</div>
-              <div style="flex:2;text-align:center">M:${r.scoreM} | L:${r.scoreL}</div>
+              <div style="flex:2;text-align:center;font-weight:bold">
+              <span style="color:#4a6cf7">L ${r.scoreL}</span>
+               -
+              <span style="color:#ff4d4d">M ${r.scoreM}</span>
+              </div>
               <div style="flex:1;text-align:right">${r.winner}</div>
               <button class="delete-btn" onclick="deleteMatch(${index})">🗑</button>
             </div>
@@ -425,7 +457,11 @@ function render() {
             ${compResults.map(r => `
               <div class="row">
                 <div style="flex:2">${r.game}</div>
-                <div style="flex:2;text-align:center">M:${r.scoreM} | L:${r.scoreL}</div>
+                <div style="flex:2;text-align:center;font-weight:bold">
+                <span style="color:#4a6cf7">L ${r.scoreL}</span>
+                 -
+                 <span style="color:#ff4d4d">M ${r.scoreM}</span>
+                 </div>
                 <div style="flex:1;text-align:right">${r.winner}</div>
               </div>
             `).join("")}
