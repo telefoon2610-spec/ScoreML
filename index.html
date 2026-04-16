@@ -68,6 +68,8 @@
 <div class="card">
   <h3>Nieuwe game</h3>
 
+  <select id="competitionSelect"></select><br>
+
   <select id="gameSelect"></select>
 
   <select id="winner">
@@ -87,27 +89,41 @@
 
 <!-- 📜 HISTORY -->
 <div class="card">
-  <h3>Geschiedenis</h3>
+  <h3>
+    Geschiedenis
+    <button onclick="setHistoryMode('active')">Actief</button>
+    <button onclick="setHistoryMode('archive')">Archief</button>
+  </h3>
   <div id="history"></div>
 </div>
 
-<!-- ⚙️ BEHEER (ingeklapt) -->
+<!-- ⚙️ BEHEER -->
 <div class="card">
-  <button class="toggle" onclick="toggleAdmin()">
-    Spellen beheren ⚙️
-  </button>
+  <button class="toggle" onclick="toggleAdmin()">Spellen beheren ⚙️</button>
+  <button class="toggle" onclick="toggleCompetitionAdmin()">Competities beheren 🏆</button>
 
-  <div id="adminPanel" style="display:none; margin-top:10px;">
+  <div id="adminPanel" style="display:none;">
     <input type="text" id="newGame" placeholder="Nieuw spel">
     <button onclick="addNewGame()">Toevoegen</button>
-
     <div id="gameList"></div>
+  </div>
+
+  <div id="competitionPanel" style="display:none;">
+    <input type="text" id="newCompetition" placeholder="Naam competitie">
+
+    <select id="competitionType">
+      <option value="year">Jaar competitie</option>
+      <option value="vacation">Vacation toernooi</option>
+    </select>
+
+    <button onclick="addCompetition()">Toevoegen</button>
+    <div id="competitionList"></div>
   </div>
 </div>
 
 <script>
 
-// 📦 data
+// DATA
 let games = JSON.parse(localStorage.getItem("games") || JSON.stringify([
   "Clever 1","Clever 2","Clever 3","Clever 4","Clever D",
   "Keer op keer 1","Keer op keer 2","Keer op keer 3","Keer op keer 4",
@@ -115,21 +131,17 @@ let games = JSON.parse(localStorage.getItem("games") || JSON.stringify([
 ]));
 
 let results = JSON.parse(localStorage.getItem("results") || "[]");
+let competitions = JSON.parse(localStorage.getItem("competitions") || "[]");
 
-const gameSelect = document.getElementById("gameSelect");
+let historyMode = "active";
 
-// 🔄 spellen renderen
+// RENDER GAMES
 function renderGames() {
-
   games.sort((a,b)=>a.localeCompare(b));
 
-  gameSelect.innerHTML = "";
-  games.forEach(g => {
-    const opt = document.createElement("option");
-    opt.value = g;
-    opt.textContent = g;
-    gameSelect.appendChild(opt);
-  });
+  gameSelect.innerHTML = games.map(g =>
+    `<option value="${g}">${g}</option>`
+  ).join("");
 
   document.getElementById("gameList").innerHTML =
     games.map(g => `
@@ -142,7 +154,33 @@ function renderGames() {
   localStorage.setItem("games", JSON.stringify(games));
 }
 
-// ➕ nieuw spel
+// RENDER COMPETITIES
+function renderCompetitions() {
+  const active = competitions.filter(c => c.active && !c.finished);
+
+  document.getElementById("competitionSelect").innerHTML =
+    active.length === 0
+      ? `<option value="">Geen actieve competitie</option>`
+      : active.map(c =>
+          `<option value="${c.id}">${c.name}</option>`
+        ).join("");
+
+  localStorage.setItem("competitions", JSON.stringify(competitions));
+}
+
+// COMPETITIE LIJST
+function renderCompetitionList() {
+  document.getElementById("competitionList").innerHTML =
+    competitions.map(c => `
+      <div class="row">
+        <span>${c.name} (${c.type}) ${c.finished ? '✅' : ''}</span>
+        <button onclick="finishCompetition(${c.id})">Sluit af</button>
+        <button onclick="deleteCompetition(${c.id})" class="delete-btn">🗑</button>
+      </div>
+    `).join("");
+}
+
+// NIEUW SPEL
 function addNewGame() {
   const g = document.getElementById("newGame").value.trim();
   if (!g) return;
@@ -155,7 +193,7 @@ function addNewGame() {
   document.getElementById("newGame").value = "";
 }
 
-// ❌ spel verwijderen
+// VERWIJDER SPEL
 function deleteGame(name) {
   if (!confirm("Spel verwijderen?")) return;
 
@@ -168,75 +206,253 @@ function deleteGame(name) {
   render();
 }
 
-// ➕ game opslaan
+// NIEUWE COMPETITIE
+function addCompetition() {
+  const name = document.getElementById("newCompetition").value.trim();
+  const type = document.getElementById("competitionType").value;
+
+  if (!name) return;
+
+  competitions.push({
+    id: Date.now(),
+    name,
+    type,
+    active: true,
+    finished: false
+  });
+
+  document.getElementById("newCompetition").value = "";
+
+  renderCompetitions();
+  renderCompetitionList();
+}
+
+// AFSLUITEN
+function finishCompetition(id) {
+  const comp = competitions.find(c => c.id === id);
+  if (!comp) return;
+
+  comp.finished = true;
+  comp.active = false;
+
+  localStorage.setItem("competitions", JSON.stringify(competitions));
+
+  renderCompetitions();
+  renderCompetitionList();
+  render();
+}
+
+// VERWIJDER COMPETITIE
+function deleteCompetition(id) {
+  if (!confirm("Competitie verwijderen?")) return;
+
+  competitions = competitions.filter(c => c.id !== id);
+  results = results.filter(r => Number(r.competitionId) !== id);
+
+  localStorage.setItem("competitions", JSON.stringify(competitions));
+  localStorage.setItem("results", JSON.stringify(results));
+
+  renderCompetitions();
+  renderCompetitionList();
+  render();
+}
+
+// GAME OPSLAAN
 function addGame() {
+  const competitionId = document.getElementById("competitionSelect").value;
+
   results.push({
     game: gameSelect.value,
     winner: document.getElementById("winner").value,
     scoreL: Number(document.getElementById("scoreL").value || 0),
-    scoreM: Number(document.getElementById("scoreM").value || 0)
+    scoreM: Number(document.getElementById("scoreM").value || 0),
+    competitionId
   });
 
   localStorage.setItem("results", JSON.stringify(results));
   render();
 }
 
-// 🗑 match verwijderen
-function deleteMatch(i) {
-  results.splice(i,1);
+// DELETE MATCH
+function deleteMatch(index) {
+  results.splice(index,1);
   localStorage.setItem("results", JSON.stringify(results));
   render();
 }
 
-// 📊 render dashboard + history
+// FILTERS
+function getActiveResultsByType(type) {
+  const activeIds = competitions
+    .filter(c => c.type === type && c.active && !c.finished)
+    .map(c => c.id);
+
+  return results.filter(r => activeIds.includes(Number(r.competitionId)));
+}
+
+function getAllActiveResults() {
+  const activeIds = competitions
+    .filter(c => c.active && !c.finished)
+    .map(c => c.id);
+
+  return results.filter(r => activeIds.includes(Number(r.competitionId)));
+}
+
+// PUNTEN
+function calculatePoints() {
+
+  let yearPoints = { L:0, M:0 };
+  let vacationPoints = { L:0, M:0 };
+
+  competitions.filter(c => c.finished).forEach(c => {
+
+    let L=0, M=0;
+
+    results
+      .filter(r => r.competitionId == c.id)
+      .forEach(r => {
+        if(r.winner==="L") L++;
+        if(r.winner==="M") M++;
+      });
+
+    if (L === M) return;
+
+    const winner = L > M ? "L" : "M";
+
+    if (c.type === "year") yearPoints[winner]++;
+    if (c.type === "vacation") vacationPoints[winner]++;
+  });
+
+  return { yearPoints, vacationPoints };
+}
+
+// HISTORY MODE
+function setHistoryMode(mode) {
+  historyMode = mode;
+  render();
+}
+
+// RENDER
 function render() {
 
-  let L=0, M=0, D=0;
+  const yearResults = getActiveResultsByType("year");
+  const vacationResults = getActiveResultsByType("vacation");
 
-  results.forEach(r=>{
-    if(r.winner==="L") L++;
-    else if(r.winner==="M") M++;
-    else D++;
-  });
+  function calc(list) {
+    let L=0, M=0, D=0;
 
-  let leader = "Gelijk";
-  if (L > M) leader = "L staat voor";
-  else if (M > L) leader = "M staat voor";
+    list.forEach(r=>{
+      if(r.winner==="L") L++;
+      else if(r.winner==="M") M++;
+      else D++;
+    });
+
+    let leader = "Gelijk";
+    if (L > M) leader = "L staat voor";
+    else if (M > L) leader = "M staat voor";
+
+    return { total:list.length, L, M, D, leader };
+  }
+
+  const year = calc(yearResults);
+  const vacation = calc(vacationResults);
+  const { yearPoints, vacationPoints } = calculatePoints();
 
   document.getElementById("dashboard").innerHTML = `
     <div class="card">
-      <h3>Overzicht</h3>
+      <h3>Jaar competitie (actief)</h3>
+      <div class="row"><span>Totaal</span><b>${year.total}</b></div>
+      <div class="row"><span>L wint</span><b>${year.L}</b></div>
+      <div class="row"><span>M wint</span><b>${year.M}</b></div>
+      <div class="row"><span>Gelijk</span><b>${year.D}</b></div>
+      <div class="row"><span>Tussenstand</span><b>${year.leader}</b></div>
+    </div>
 
-      <div class="row"><span>Totaal</span><b>${results.length}</b></div>
-      <div class="row"><span>L wint</span><b>${L}</b></div>
-      <div class="row"><span>M wint</span><b>${M}</b></div>
-      <div class="row"><span>Gelijk</span><b>${D}</b></div>
+    <div class="card">
+      <h3>Vacation toernooi (actief)</h3>
+      <div class="row"><span>Totaal</span><b>${vacation.total}</b></div>
+      <div class="row"><span>L wint</span><b>${vacation.L}</b></div>
+      <div class="row"><span>M wint</span><b>${vacation.M}</b></div>
+      <div class="row"><span>Gelijk</span><b>${vacation.D}</b></div>
+      <div class="row"><span>Tussenstand</span><b>${vacation.leader}</b></div>
+    </div>
 
-      <div class="row"><span>Tussenstand</span><b>${leader}</b></div>
+    <div class="card">
+      <h3>Punten</h3>
+      <div class="row"><span>Jaar punten L</span><b>${yearPoints.L}</b></div>
+      <div class="row"><span>Jaar punten M</span><b>${yearPoints.M}</b></div>
+      <div class="row"><span>Vacation punten L</span><b>${vacationPoints.L}</b></div>
+      <div class="row"><span>Vacation punten M</span><b>${vacationPoints.M}</b></div>
     </div>
   `;
 
-  document.getElementById("history").innerHTML =
-    results.length === 0
-      ? "<div class='muted'>Nog geen games</div>"
-      : results.map((r,i)=>`
-        <div class="row">
-          <div style="flex:2">${r.game}</div>
-          <div style="flex:2;text-align:center">M:${r.scoreM} | L:${r.scoreL}</div>
-          <div style="flex:1;text-align:right">${r.winner}</div>
-          <button class="delete-btn" onclick="deleteMatch(${i})">🗑</button>
-        </div>
-      `).join("");
+  let html = "";
+
+  if (historyMode === "active") {
+
+    const activeResults = getAllActiveResults();
+
+    html = activeResults.length === 0
+      ? "<div class='muted'>Nog geen actieve games</div>"
+      : activeResults.map(r=>{
+          const index = results.indexOf(r);
+          return `
+            <div class="row">
+              <div style="flex:2">${r.game}</div>
+              <div style="flex:2;text-align:center">M:${r.scoreM} | L:${r.scoreL}</div>
+              <div style="flex:1;text-align:right">${r.winner}</div>
+              <button class="delete-btn" onclick="deleteMatch(${index})">🗑</button>
+            </div>
+          `;
+        }).join("");
+
+  } else {
+
+    const finishedCompetitions = competitions.filter(c => c.finished);
+
+    if (finishedCompetitions.length === 0) {
+      html = "<div class='muted'>Geen archief beschikbaar</div>";
+    } else {
+
+      html = finishedCompetitions.map(c => {
+
+        const compResults = results.filter(r => Number(r.competitionId) === c.id);
+
+        if (compResults.length === 0) return "";
+
+        return `
+          <div class="card">
+            <h4>${c.name}</h4>
+            ${compResults.map(r => `
+              <div class="row">
+                <div style="flex:2">${r.game}</div>
+                <div style="flex:2;text-align:center">M:${r.scoreM} | L:${r.scoreL}</div>
+                <div style="flex:1;text-align:right">${r.winner}</div>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }).join("");
+    }
+  }
+
+  document.getElementById("history").innerHTML = html;
 }
 
-// 🎛 toggle admin
+// TOGGLES
 function toggleAdmin() {
   const p = document.getElementById("adminPanel");
   p.style.display = (p.style.display === "none") ? "block" : "none";
 }
 
-// init
+function toggleCompetitionAdmin() {
+  const p = document.getElementById("competitionPanel");
+  p.style.display = (p.style.display === "none") ? "block" : "none";
+}
+
+// INIT
 renderGames();
+renderCompetitions();
+renderCompetitionList();
 render();
 
 </script>
