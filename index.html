@@ -356,6 +356,10 @@ function setHistoryMode(mode) {
 }
 
 // RENDER
+function getActiveCompetitionName(type) {
+  const comp = competitions.find(c => c.type === type && c.active && !c.finished);
+  return comp ? comp.name : (type === "year" ? "Jaar competitie" : "Vacation");
+}
 function render() {
 
   const yearResults = getActiveResultsByType("year");
@@ -385,7 +389,7 @@ document.getElementById("dashboard").innerHTML = `
   <div style="display:grid; grid-template-columns:1fr 1fr; gap:15px;">
     
     <div class="card">
-      <h3>Jaar competitie</h3>
+      <h3>${getActiveCompetitionName("year")}</h3>
       <div class="row"><span>Totaal</span><b>${year.total}</b></div>
       <div class="row"><span>L</span><b>${year.L}</b></div>
       <div class="row"><span>M</span><b>${year.M}</b></div>
@@ -394,7 +398,7 @@ document.getElementById("dashboard").innerHTML = `
     </div>
 
     <div class="card">
-      <h3>Vacation</h3>
+      <h3>${getActiveCompetitionName("vacation")}</h3>
       <div class="row"><span>Totaal</span><b>${vacation.total}</b></div>
       <div class="row"><span>L</span><b>${vacation.L}</b></div>
       <div class="row"><span>M</span><b>${vacation.M}</b></div>
