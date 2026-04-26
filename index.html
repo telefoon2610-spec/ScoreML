@@ -283,18 +283,23 @@ function deleteCompetition(id) {
 
 // GAME OPSLAAN
 function addGame() {
-  const competitionId = document.getElementById("competitionSelect").value;
-
-  results.push({
+  const data = {
     game: gameSelect.value,
     winner: document.getElementById("winner").value,
     scoreL: Number(document.getElementById("scoreL").value || 0),
     scoreM: Number(document.getElementById("scoreM").value || 0),
-    competitionId
+    competitionId: document.getElementById("competitionSelect").value
+  };
+
+  fetch("https://script.google.com/macros/s/AKfycbxqw5bNNgFoZ_8FBrnU9ugUfmtQ791mFOKXofBTLwhWBNSWrSNsCoeD11JzC5RsNAXa/exec", {
+    method: "POST",
+    body: JSON.stringify(data)
   });
 
-  localStorage.setItem("results", JSON.stringify(results));
-  render();
+  document.getElementById("scoreL").value = "";
+  document.getElementById("scoreM").value = "";
+
+  alert("Opgeslagen!");
 }
 
 // DELETE MATCH
